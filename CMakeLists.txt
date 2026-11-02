@@ -8,7 +8,10 @@ if(NOT "${CP_OPTIMIZATION_LEVEL}" MATCHES "^[0-3]$")
     message(FATAL_ERROR "CP_OPTIMIZATION_LEVEL must be 0, 1, 2, or 3")
 endif()
 
-add_executable(entry entry.c)
+add_executable(entry
+    entry.c
+    sys_call.c
+)
 
 set_target_properties(entry PROPERTIES
     C_STANDARD 23
