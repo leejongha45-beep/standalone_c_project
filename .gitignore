@@ -1,0 +1,10 @@
+/build/
+/.toolchain/bin/
+/CMakeUserPresets.json
+/compile_commands.json
+/entry
+/entry.o
+/entry.s
+.DS_Store
+*.swp
+*.swo
