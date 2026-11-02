@@ -12,7 +12,15 @@ typedef unsigned int uint32_t;
 typedef unsigned long long uint64_t;
 
 typedef unsigned long size_t;
-typedef unsigned long uptr_t;
+typedef unsigned long long uptr_t;
+typedef unsigned char byte_t;
+
+typedef enum : uint16_t {
+    EXRET_SUCCESS = 0,
+    EXRET_MEMORY_RESERVE_FAIL = 100,
+    EXRET_MEMORY_COMMIT_FAIL = 101,
+    EXRET_MEMORY_RELEASE_FAIL = 102,
+} exret_t;
 
 static_assert(sizeof(uint8_t) == 1);
 static_assert(sizeof(uint16_t) == 2);
@@ -30,3 +38,4 @@ struct i64_span {
 };
 
 #endif /* CP_TYPES_H */
+

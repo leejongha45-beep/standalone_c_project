@@ -17,9 +17,3 @@ int64_t arm64_syscall(int64_t sys_num, struct i64_span in) {
 
     return rx0;
 }
-
-[[noreturn]] void exit(void){
-    int64_t rin_exit[3] = {0, 0, 0};
-    arm64_syscall(SYSCALL_EXIT_GROUP, (struct i64_span){rin_exit, 3});
-    __builtin_unreachable();
-}

@@ -1,4 +1,6 @@
 #include "sys_call.h"
+#include "exit.h"
+#include "types.h"
 
 [[noreturn]] void _start(void) {
     char ch;
@@ -10,6 +12,6 @@
         arm64_syscall(SYSCALL_WRITE, (struct i64_span){rin_wirte, 3});
     }
 
-    exit();
+    exit(0);
     __builtin_unreachable();
 }

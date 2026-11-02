@@ -1,0 +1,18 @@
+# Keep semantic analysis aligned with the project's O0 compilation database.
+CompileFlags:
+  CompilationDatabase: build/O0
+
+# The real IWYU tool provides include diagnostics through nvim-lint.
+# Native Include Cleaner misidentifies our custom int*_t aliases as stdint.h.
+Diagnostics:
+  UnusedIncludes: None
+  MissingIncludes: None
+
+Completion:
+  HeaderInsertion: Never
+
+---
+If:
+  PathMatch: .*\.h
+CompileFlags:
+  Add: [-xc-header]

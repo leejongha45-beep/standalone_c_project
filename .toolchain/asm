@@ -1,0 +1,82 @@
+#!/usr/bin/env python3
+"""Compile one project C file with debug information for static assembly viewing."""
+import argparse
+import json
+from pathlib import Path
+import shlex
+import subprocess
+import sys
+
+ROOT = Path(__file__).resolve().parent.parent
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("source", type=Path, help="project C source path")
+    parser.add_argument("optimization", nargs="?", choices=["-O0", "-O1", "-O2", "-O3"],
+                        default="-O0", help="optimization level (default: -O0)")
+    # Treat the final -O flag as the positional optimization argument.
+    args = sys.argv[1:]
+    if args and args[-1] in ("-O0", "-O1", "-O2", "-O3"):
+        args.insert(len(args) - 1, "--")
+    options = parser.parse_args(args)
+    source = options.source.resolve()
+    if not source.is_file() or source.suffix != ".c":
+        parser.error("source must be an existing .c file")
+    try:
+        relative = source.relative_to(ROOT)
+    except ValueError:
+        parser.error("source must be inside the project")
+    if relative.parts[0] in ("build", ".git", ".toolchain"):
+        parser.error("choose a source outside generated/tool directories")
+
+    preset = options.optimization[1:]
+    subprocess.run([str(ROOT / ".toolchain/bin/cmake"), "--preset", preset],
+                   cwd=ROOT, check=True)
+    database = json.loads((ROOT / "build" / preset / "compile_commands.json").read_text())
+    exact = [e for e in database if (Path(e["directory"]) / e["file"]).resolve() == source]
+    baseline = [e for e in database if Path(e["file"]).name == "entry.c"]
+    entry = (exact or baseline)[0]
+    if not exact:
+        print("Using entry.c compile options for this unregistered source.", flush=True)
+    argv = entry.get("arguments") or shlex.split(entry["command"])
+    cwd = Path(entry["directory"])
+    original = (cwd / entry["file"]).resolve()
+    flags = []
+    i = 1
+    while i < len(argv):
+        arg = argv[i]
+        if arg in ("-o", "-MF", "-MT", "-MQ", "-MJ"):
+            i += 2
+            continue
+        if arg in ("-c", "-MD", "-MMD", "-MP"):
+            i += 1
+            continue
+        if not arg.startswith("-") and (cwd / arg).resolve() == original:
+            i += 1
+            continue
+        flags.append(arg)
+        i += 1
+    output = ROOT / "build" / preset / "asm" / relative.with_suffix(".o")
+    output.parent.mkdir(parents=True, exist_ok=True)
+    # Compile to a temporary sibling so failed builds cannot leave a partial object.
+    temporary = output.with_suffix(".o.tmp")
+    try:
+        subprocess.run([argv[0], *flags, "-g", "-c", str(source), "-o", str(temporary)],
+                       cwd=cwd, check=True)
+        temporary.replace(output)
+    finally:
+        temporary.unlink(missing_ok=True)
+    print(f"Object: {output}")
+    print(f":AssemblyTarget {output}")
+    return 0
+
+
+if __name__ == "__main__":
+    try:
+        raise SystemExit(main())
+    except subprocess.CalledProcessError as error:
+        raise SystemExit(error.returncode)
+    except (OSError, ValueError, KeyError, IndexError) as error:
+        print(f"asm: {error}", file=sys.stderr)
+        raise SystemExit(1)
