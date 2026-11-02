@@ -1,3 +1,5 @@
+#include "memory.h"
+
 #include "debug.h"
 #include "sys_call.h"
 #include "types.h"
