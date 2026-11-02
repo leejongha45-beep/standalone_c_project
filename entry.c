@@ -24,17 +24,27 @@ static_assert(sizeof(int64_t) == 8);
 constexpr int64_t SYSCALL_READ = 63;
 constexpr int64_t SYSCALL_WRITE = 64;
 constexpr int64_t SYSCALL_EXIT = 93;
+constexpr int64_t SYSCALL_VM_MAP = 222;
+constexpr int64_t SYSCALL_VM_ACCESS = 226;
 
-static int64_t arm64_syscall3(int64_t sys_num, int64_t in_x0, int64_t in_x1,
-                              int64_t in_x2) {
+struct i64_span {
+    const int64_t *data;
+    size_t count;
+};
+
+static int64_t arm64_syscall(int64_t sys_num, struct i64_span in) {
     register int64_t rx8 __asm__("x8") = sys_num;
-    register int64_t rx0 __asm__("x0") = in_x0;
-    register int64_t rx1 __asm__("x1") = in_x1;
-    register int64_t rx2 __asm__("x2") = in_x2;
+    register int64_t rx0 __asm__("x0") = in.count > 0 ? in.data[0] : 0;
+    register int64_t rx1 __asm__("x1") = in.count > 1 ? in.data[1] : 0;
+    register int64_t rx2 __asm__("x2") = in.count > 2 ? in.data[2] : 0;
+    register int64_t rx3 __asm__("x3") = in.count > 3 ? in.data[3] : 0;
+    register int64_t rx4 __asm__("x4") = in.count > 4 ? in.data[4] : 0;
+    register int64_t rx5 __asm__("x5") = in.count > 5 ? in.data[5] : 0;
 
     __asm__ volatile("svc #0"
                      : "+r"(rx0)
-                     : "r"(rx8), "r"(rx1), "r"(rx2)
+                     : "r"(rx8), "r"(rx1), "r"(rx2), "r"(rx3), "r"(rx4),
+                       "r"(rx5)
                      : "memory", "cc");
 
     return rx0;
@@ -42,11 +52,15 @@ static int64_t arm64_syscall3(int64_t sys_num, int64_t in_x0, int64_t in_x1,
 
 [[noreturn]] void _start(void) {
     char ch;
-    int64_t n = arm64_syscall3(SYSCALL_READ, 0, (uptr_t)&ch, 1);
+    int64_t rin_read[3] = {0, (uptr_t)&ch, 1};
+
+    int64_t n = arm64_syscall(SYSCALL_READ, (struct i64_span){rin_read, 3});
     if (n == 1) {
-        arm64_syscall3(SYSCALL_WRITE, 1, (uptr_t)&ch, 1);
+        int64_t rin_wirte[3] = {1, (uptr_t)&ch, 1};
+        arm64_syscall(SYSCALL_WRITE, (struct i64_span){rin_wirte, 3});
     }
 
-    arm64_syscall3(SYSCALL_EXIT, 0, 0, 0);
+    int64_t rin_exit[3] = {0, 0, 0};
+    arm64_syscall(SYSCALL_EXIT, (struct i64_span){rin_exit, 3});
     __builtin_unreachable();
 }

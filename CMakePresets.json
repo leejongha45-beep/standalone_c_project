@@ -7,10 +7,10 @@
   },
   "configurePresets": [
     {
-      "name": "debug",
-      "displayName": "ARM64 Linux Debug (Clang + Ninja)",
+      "name": "base",
+      "hidden": true,
       "generator": "Ninja",
-      "binaryDir": "${sourceDir}/build/debug",
+      "binaryDir": "${sourceDir}/build/${presetName}",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
         "CMAKE_C_COMPILER": "${sourceDir}/.toolchain/bin/clang",
@@ -18,12 +18,56 @@
         "CMAKE_TRY_COMPILE_TARGET_TYPE": "STATIC_LIBRARY",
         "CMAKE_EXPORT_COMPILE_COMMANDS": true
       }
+    },
+    {
+      "name": "O0",
+      "inherits": "base",
+      "displayName": "ARM64 Clang -O0 (debug symbols)",
+      "cacheVariables": {
+        "CP_OPTIMIZATION_LEVEL": "0"
+      }
+    },
+    {
+      "name": "O1",
+      "inherits": "base",
+      "displayName": "ARM64 Clang -O1 (debug symbols)",
+      "cacheVariables": {
+        "CP_OPTIMIZATION_LEVEL": "1"
+      }
+    },
+    {
+      "name": "O2",
+      "inherits": "base",
+      "displayName": "ARM64 Clang -O2 (debug symbols)",
+      "cacheVariables": {
+        "CP_OPTIMIZATION_LEVEL": "2"
+      }
+    },
+    {
+      "name": "O3",
+      "inherits": "base",
+      "displayName": "ARM64 Clang -O3 (debug symbols)",
+      "cacheVariables": {
+        "CP_OPTIMIZATION_LEVEL": "3"
+      }
     }
   ],
   "buildPresets": [
     {
-      "name": "debug",
-      "configurePreset": "debug"
+      "name": "O0",
+      "configurePreset": "O0"
+    },
+    {
+      "name": "O1",
+      "configurePreset": "O1"
+    },
+    {
+      "name": "O2",
+      "configurePreset": "O2"
+    },
+    {
+      "name": "O3",
+      "configurePreset": "O3"
     }
   ]
 }
