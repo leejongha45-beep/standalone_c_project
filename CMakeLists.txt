@@ -10,6 +10,8 @@ endif()
 
 add_executable(entry
     entry.c
+    memory.c
+    int_math.c
     sys_call.c
     exit.c
 )

@@ -1,16 +1,53 @@
-#include "sys_call.h"
 #include "exit.h"
+#include "memory.h"
+#include "sys_call.h"
 #include "types.h"
 
-[[noreturn]] void _start(void) {
-    char ch;
-    int64_t rin_read[3] = {0, (uptr_t)&ch, 1};
+void print(const char* msg, ...) {
+    char buf[128];
+    size_t len = 0;
 
-    int64_t n = arm64_syscall(SYSCALL_READ, (struct i64_span){rin_read, 3});
-    if (n == 1) {
-        int64_t rin_wirte[3] = {1, (uptr_t)&ch, 1};
-        arm64_syscall(SYSCALL_WRITE, (struct i64_span){rin_wirte, 3});
+    __builtin_va_list args;
+    __builtin_c23_va_start(args);
+
+    while (*msg != '\0' && len < sizeof(buf)) {
+        if (msg[0] != '%' || msg[1] != 'd') {
+            buf[len++] = *msg++;
+            continue;
+        }
+
+        msg += 2;
+        int64_t val = __builtin_va_arg(args, int);
+        if (val < 0) {
+            buf[len++] = '-';
+            val = -val;
+        }
+
+        char digits[10];
+        size_t count = 0;
+        do {
+            digits[count++] = (char)('0' + val % 10);
+            val /= 10;
+        } while (val != 0);
+
+        while (count > 0 && len < sizeof(buf)) {
+            buf[len++] = digits[--count];
+        }
     }
+
+    __builtin_va_end(args);
+
+    const string_t str = {.data = buf, .len = len};
+    const int64_t rin_write[3] = {
+        2,
+        (int64_t)(uptr_t)str.data,
+        (int64_t)str.len,
+    };
+    (void)arm64_syscall(SYSCALL_WRITE, (struct i64_span){rin_write, 3});
+}
+
+[[noreturn]] void _start(void) {
+    struct virtual_memory log_vm;
 
     exit(0);
     __builtin_unreachable();
